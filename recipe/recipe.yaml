@@ -2,7 +2,7 @@ schema_version: 1
 
 context:
   name: dbcsr
-  version: "2.9.0"
+  version: "2.9.1"
 
 package:
   name: ${{ name }}
@@ -10,7 +10,7 @@ package:
 
 source:
   - url: https://github.com/cp2k/dbcsr/releases/download/v${{ version }}/dbcsr-${{ version }}.tar.gz
-    sha256: a04cacd2203bd97a31ac993f9ab84237a48191140bba29efadbc27db544bbcd6
+    sha256: fa5a4aeba0a07761511af2c26c779bd811b5ea0ef06a5d94535b6dd7b2e0ce59
     patches:
       - dbcsr-shared.patch
 
