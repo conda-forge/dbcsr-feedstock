@@ -31,8 +31,6 @@ requirements:
     - cmake
     - make
     - fypp
-    - if: build_platform != host_platform and mpi == "openmpi"
-      then: ${{ mpi }}
     - if: linux
       then: libgomp
     - if: osx
