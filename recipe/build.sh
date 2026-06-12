@@ -2,6 +2,12 @@
 
 set -xe
 
+# In cross-compilation mode, CMake's FindMPI cannot run test executables
+# to detect MPI. Provide explicit hints to bypass the need for runtime detection.
+if [[ "${CONDA_BUILD_CROSS_COMPILATION:-0}" == "1" ]]; then
+    CMAKE_ARGS="${CMAKE_ARGS} -DMPI_HOME=$PREFIX"
+fi
+
 cmake -S . -B build \
     -DCMAKE_C_COMPILER=${CC} \
     -DCMAKE_CXX_COMPILER=${CXX} \
