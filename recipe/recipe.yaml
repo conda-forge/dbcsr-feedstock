@@ -2,7 +2,7 @@ schema_version: 1
 
 context:
   name: dbcsr
-  version: "2.9.1"
+  version: "2.10.0"
   mpi: ${{ mpi if mpi else "openmpi" }}
   mpi_prefix: mpi_${{ mpi if mpi else "openmpi" }}
 
@@ -12,12 +12,12 @@ package:
 
 source:
   - url: https://github.com/cp2k/dbcsr/releases/download/v${{ version }}/dbcsr-${{ version }}.tar.gz
-    sha256: fa5a4aeba0a07761511af2c26c779bd811b5ea0ef06a5d94535b6dd7b2e0ce59
+    sha256: 3d897220fbb4498215331efad6905eb7744881b4cf04eb5c5fb4db7c48a56ef9
     patches:
       - dbcsr-shared.patch
 
 build:
-  number: 3
+  number: 0
   skip:
     - win
   string: ${{ mpi_prefix }}_h${{ hash }}_${{ build_number }}
@@ -69,8 +69,7 @@ tests:
 about:
   homepage: https://cp2k.github.io/dbcsr
   summary: DBCSR is a sparse matrix library designed to efficiently perform sparse matrix-matrix multiplication.
-  description:
-    DBCSR is a sparse matrix library designed to efficiently perform sparse matrix-matrix multiplication, among other operations. It is MPI and OpenMP parallel, and can exploit accelerators. DBCSR was developed as a part of CP2K, where it provides core functionality for linear scaling electronic structure
+  description: DBCSR is a sparse matrix library designed to efficiently perform sparse matrix-matrix multiplication, among other operations. It is MPI and OpenMP parallel, and can exploit accelerators. DBCSR was developed as a part of CP2K, where it provides core functionality for linear scaling electronic structure 
     theory. It is now released as a standalone library for integration in other projects..
   license: GPL-2.0-only
   license_file: LICENSE
