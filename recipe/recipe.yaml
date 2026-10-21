@@ -3,8 +3,7 @@ schema_version: 1
 context:
   name: dbcsr
   version: "2.10.0"
-  mpi: ${{ mpi if mpi else "openmpi" }}
-  mpi_prefix: mpi_${{ mpi if mpi else "openmpi" }}
+  mpi_prefix: "mpi_${{ mpi }}"
 
 package:
   name: ${{ name }}
@@ -13,11 +12,9 @@ package:
 source:
   - url: https://github.com/cp2k/dbcsr/releases/download/v${{ version }}/dbcsr-${{ version }}.tar.gz
     sha256: 3d897220fbb4498215331efad6905eb7744881b4cf04eb5c5fb4db7c48a56ef9
-    patches:
-      - dbcsr-shared.patch
 
 build:
-  number: 0
+  number: 1
   skip:
     - win
   string: ${{ mpi_prefix }}_h${{ hash }}_${{ build_number }}
@@ -33,8 +30,6 @@ requirements:
     - fypp
     - if: build_platform != host_platform and mpi == "openmpi"
       then: ${{ mpi }}
-    - if: linux
-      then: libgomp
     - if: osx
       then: llvm-openmp
   host:
@@ -45,33 +40,61 @@ requirements:
     - libblas
     - liblapack
     - ${{ mpi }}
-  run:
-    - ${{ mpi }}
   run_exports:
-    - ${{ pin_subpackage(name, upper_bound='x') }}
+    - ${{ pin_subpackage(name, upper_bound='x.x') }}
     - ${{ name }} * ${{ mpi_prefix }}_*
 
 tests:
-  - script:
-      - if: unix
-        then:
-          - test -e ${PREFIX}/include/dbcsr.h
-          - test -e ${PREFIX}/include/dbcsr_api.mod
-          - test -e ${PREFIX}/include/dbcsr_tensor.h
-          - test -e ${PREFIX}/include/dbcsr_tensor_api.mod
-          - test -e ${PREFIX}/lib/cmake/dbcsr/DBCSRConfig.cmake
-          - test -e ${PREFIX}/lib/cmake/dbcsr/DBCSRConfigVersion.cmake
-          - test -e ${PREFIX}/lib/cmake/dbcsr/DBCSRTargets-release.cmake
-          - test -e ${PREFIX}/lib/cmake/dbcsr/DBCSRTargets.cmake
-          - test -e ${PREFIX}/lib/libdbcsr${SHLIB_EXT}
-          - test -e ${PREFIX}/lib/libdbcsr_c${SHLIB_EXT}
+  - package_contents:
+      include:
+        - dbcsr.h
+        - dbcsr_tensor.h
+      lib:
+        - dbcsr
+        - dbcsr_c
+      files:
+        - include/dbcsr_api.mod
+        - include/dbcsr_tensor_api.mod
+        - lib/cmake/dbcsr/DBCSRConfig.cmake
+        - lib/cmake/dbcsr/DBCSRConfigVersion.cmake
+        - lib/cmake/dbcsr/DBCSRTargets.cmake
+        - lib/cmake/dbcsr/DBCSRTargets-release.cmake
+  # Build the upstream examples against the installed package via
+  # find_package(DBCSR) and run them on 2 MPI ranks
+  - files:
+      recipe:
+        - test/
+      source:
+        - examples/
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ compiler('fortran') }}
+        - cmake
+        - make
+    script:
+      - export OMP_NUM_THREADS=1
+      - export OMPI_ALLOW_RUN_AS_ROOT=1 OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+      - export OMPI_MCA_plm_ssh_agent=false OMPI_MCA_btl_sm_single_copy_mechanism=none
+      - export PRTE_MCA_rmaps_default_mapping_policy=:oversubscribe
+      - export HYDRA_LAUNCHER=fork
+      - if: osx
+        then: export OMPI_MCA_btl=self,tcp
+      - cp -r examples test/
+      - cmake -S test -B build -DCMAKE_PREFIX_PATH=${PREFIX}
+      - cmake --build build -j2
+      - for exe in dbcsr_example_1 dbcsr_example_2 dbcsr_example_3 dbcsr_example_3_cpp; do mpiexec -n 2 ./build/${exe}; done
 
 about:
   homepage: https://cp2k.github.io/dbcsr
   summary: DBCSR is a sparse matrix library designed to efficiently perform sparse matrix-matrix multiplication.
-  description: DBCSR is a sparse matrix library designed to efficiently perform sparse matrix-matrix multiplication, among other operations. It is MPI and OpenMP parallel, and can exploit accelerators. DBCSR was developed as a part of CP2K, where it provides core functionality for linear scaling electronic structure 
-    theory. It is now released as a standalone library for integration in other projects..
-  license: GPL-2.0-only
+  description: |
+    DBCSR is a sparse matrix library designed to efficiently perform sparse matrix-matrix multiplication,
+    among other operations. It is MPI and OpenMP parallel, and can exploit accelerators. DBCSR was developed
+    as a part of CP2K, where it provides core functionality for linear scaling electronic structure theory.
+    It is now released as a standalone library for integration in other projects.
+  license: GPL-2.0-or-later
   license_file: LICENSE
   repository: https://github.com/cp2k/dbcsr
   documentation: https://cp2k.github.io/dbcsr/develop/page/2-user-guide/index.html
@@ -79,3 +102,4 @@ about:
 extra:
   recipe-maintainers:
     - martin-g
+    - mkrack
